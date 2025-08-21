@@ -1,0 +1,7 @@
+<poml>
+  <cp caption="Memory">
+    <p>{{memory}}</p>
+  </cp>
+
+  <input>{{message}}</input>
+</poml>

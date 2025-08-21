@@ -7,13 +7,9 @@ class A4FProvider:
         self.base_url = "https://api.a4f.co/v1"
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
-    def completion(self, system, model="provider-6/o3-high", messages=None, stream=False, **kwargs):
+    def completion(self, model="provider-6/o3-high", messages=None, stream=False, **kwargs):
         if messages is None:
             messages = []
-
-        # Prepend system message
-        if system:
-            messages = [{"role": "system", "content": system}] + messages
 
         # Validate all message contents are strings
         for msg in messages:

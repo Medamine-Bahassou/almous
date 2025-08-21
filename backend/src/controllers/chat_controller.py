@@ -10,7 +10,8 @@ from src.services.chat_service import (
     chat_service_completion, 
     chat_rag_service_completion,
     search_agent_service_completion,
-    chat_service_models 
+    chat_service_models ,
+    chat_generate
 )
 
 
@@ -27,6 +28,68 @@ def get_models():
     except Exception as e:
         print("Error fetching models:", e)
         return jsonify({"error": "Failed to fetch models"}), 500
+
+
+
+
+@chat_bp.route('/chat', methods=['POST'])
+def chat():
+    dto = ChatRequestDTO(**request.get_json())
+    stream = True # Force streaming for this endpoint
+    generator = chat_generate(
+        dto.tools, 
+        dto.provider, 
+        dto.model, 
+        dto.message, 
+        dto.attachment, 
+        dto.stream
+    )
+    return Response(stream_with_context(generator), mimetype='text/event-stream')
+
+
+
+@chat_bp.route('/upload', methods=['POST'])
+def upload():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    if file:
+        filename = secure_filename(file.filename)
+        upload_dir = "/home/med/Desktop/Git/AIONOS/backend_new/src/tools/rag/data"
+        
+        # Ensure directory exists
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Empty the folder
+        for f in os.listdir(upload_dir):
+            file_path = os.path.join(upload_dir, f)
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)  # remove file or symlink
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)  # remove folder recursively
+
+        # Save the new file
+        save_path = os.path.join(upload_dir, filename)
+        file.save(save_path) 
+
+        
+        return jsonify({"message": "File uploaded successfully", "path": save_path}), 200
+
+
+    
+    return jsonify({"error": "Invalid file type. Only PDFs are allowed."}), 400
+
+
+
+
+
+# ===========
+
 
 
 # @chat_bp.route('/chat', methods=['POST'])
@@ -217,87 +280,3 @@ import time
 
 #     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
-
-
-@chat_bp.route('/chat', methods=['POST'])
-def chat():
-    dto = ChatRequestDTO(**request.get_json())
-    stream = True # Force streaming for this endpoint
-
-    def generate():
-        # This function handles the logic for different chat modes
-        if dto.tools and "search" in dto.tools:
-            yield f"data: {json.dumps({'status': 'Starting search agent'})}\n\n"
-            result_stream = search_agent_service_completion(
-                provider=dto.provider, model=dto.model, message=dto.message, stream=stream
-            )
-            yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-            for chunk in result_stream:
-                # CORRECT: Wrap each chunk in the SSE format
-                yield f"data: {json.dumps(chunk)}\n\n"
-            return
-
-        # Handle other tools like "study" in a similar way if needed...
-
-        # Handle attachments (RAG)
-        if dto.attachment:
-            yield f"data: {json.dumps({'status': 'Processing document'})}\n\n"
-            result_stream = chat_rag_service_completion(
-                provider=dto.provider, system=dto.system, model=dto.model, 
-                message=dto.message, attachment=dto.attachment, stream=stream
-            )
-            yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-            for chunk in result_stream:
-                # CORRECT: Wrap each chunk in the SSE format
-                yield f"data: {json.dumps(chunk)}\n\n"
-            return
-        
-        # Default chat completion if no tools or attachments
-        yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-        result_stream = chat_service_completion(
-            provider=dto.provider, system=dto.system, model=dto.model,
-            message=dto.message, stream=stream
-        )
-        for chunk in result_stream:
-            # CORRECT: Wrap each chunk in the SSE format
-            yield f"data: {json.dumps(chunk)}\n\n"
-
-    return Response(stream_with_context(generate()), mimetype='text/event-stream')
-
-
-
-@chat_bp.route('/upload', methods=['POST'])
-def upload():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-
-    file = request.files['file']
-
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-
-    if file:
-        filename = secure_filename(file.filename)
-        upload_dir = "/home/med/Desktop/Git/AIONOS/backend_new/src/tools/rag/data"
-        
-        # Ensure directory exists
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        # Empty the folder
-        for f in os.listdir(upload_dir):
-            file_path = os.path.join(upload_dir, f)
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)  # remove file or symlink
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)  # remove folder recursively
-
-        # Save the new file
-        save_path = os.path.join(upload_dir, filename)
-        file.save(save_path) 
-
-        
-        return jsonify({"message": "File uploaded successfully", "path": save_path}), 200
-
-
-    
-    return jsonify({"error": "Invalid file type. Only PDFs are allowed."}), 400

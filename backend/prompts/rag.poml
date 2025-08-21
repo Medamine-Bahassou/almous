@@ -1,0 +1,21 @@
+<poml>
+  <!-- Let variables for dynamic input -->
+  <!-- <let name="context">{{context}}</let>
+  <let name="question">{{question}}</let> -->
+
+  <!-- Instructions for the assistant -->
+  <role>
+    You are an AI assistant. Use the provided document(s) and user question to generate a helpful, concise, and accurate response.
+  </role>
+
+  <p>
+    <b>Document(s):</b>
+    {{document}}
+  </p>
+
+  <include src="input.poml" />
+
+  <p>
+    <b>Assistant:</b>
+  </p>
+</poml>

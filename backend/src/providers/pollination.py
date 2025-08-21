@@ -13,7 +13,7 @@ class PollinationsProvider:
     def __init__(self):
         self.api_key = API_KEY
 
-    def completion(self, system, model="openai", messages="", stream=False, **kwargs):
+    def completion(self, model="openai", messages="", stream=False, **kwargs):
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"

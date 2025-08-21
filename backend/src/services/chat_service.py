@@ -1,6 +1,7 @@
 import uuid
 from werkzeug.utils import secure_filename
 import json
+from poml import poml
 
 from src.providers.global_completion import ( 
   chat_completion,
@@ -29,6 +30,39 @@ from src.tools.search.search_agent import (
 )
 
 
+
+_SEARCH_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/search.poml"
+_BASE_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/prompt-input.poml"
+_STUDY_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/study-mode.poml"
+_LATEX_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/latex-mode.poml"
+
+
+def chat_memory():
+  memory = "\n".join(item["content"] for item in get_memory())
+  return memory
+
+
+def use_chat(messages, provider, model, stream=False):
+  print(messages)
+
+  if provider == "pollination":
+    provider1 = PollinationsProvider()
+  elif provider == "groq":
+    provider1= GroqProvider() 
+  elif provider == "pollination":
+    provider1 = A4FProvider()
+  else:
+    return "No provider"
+    
+
+  return chat_completion(
+     provider=provider1, 
+     model=model, 
+     messages=messages, 
+     stream=stream
+  )
+
+
 def chat_service_models(provider):
     if provider == "groq":
         return GroqProvider().models()
@@ -40,27 +74,76 @@ def chat_service_models(provider):
         return []
 
 
-def chat_service_completion(provider, system, model, message, stream=False):
-  if provider == "pollination":
-    provider1 = PollinationsProvider()
-  elif provider == "groq":
-    provider1= GroqProvider() 
-  elif provider == "pollination":
-    provider1 = A4FProvider()
+def chat_service_study_completion(provider, model, message, stream=False):
+  memory = chat_memory()
 
-  else:
-    return
+  prompt = poml(
+    markup=_STUDY_PROMPT,
+    format="openai_chat",
+    context={
+      "message": message,
+      "memory": memory 
+    }
+  )
 
-  return chat_completion(
-     provider=provider1, 
-     system=system, 
-     model=model, 
-     user_message=message, 
-     stream=stream
+  messages = prompt.get("messages")
+  
+  return use_chat(
+    messages=messages,
+    provider=provider,
+    model=model,
+    stream=stream
   )
 
 
-def chat_rag_service_completion(provider, system, model, message, attachment, stream=False):
+def chat_service_latex_completion(provider, model, message, stream=False):
+  memory = chat_memory()
+
+  prompt = poml(
+    markup=_LATEX_PROMPT,
+    format="openai_chat",
+    context={
+      "message": message,
+      "memory": memory 
+    }
+  )
+
+  messages = prompt.get("messages")
+  
+  return use_chat(
+    messages=messages,
+    provider=provider,
+    model=model,
+    stream=stream
+  )
+
+
+def chat_service_completion(provider, model, message, stream=False):
+  memory = chat_memory()
+
+  prompt = poml(
+    markup=_BASE_PROMPT,
+    format="openai_chat",
+    context={
+      "message": message,
+      "memory": memory 
+    }
+  )
+
+  messages = prompt.get("messages")
+  
+  return use_chat(
+    messages=messages,
+    provider=provider,
+    model=model,
+    stream=stream
+  )
+
+
+def chat_rag_service_completion(provider, model, message, attachment, stream=False):
+
+  memory = chat_memory()
+
   if isinstance(attachment, list):
     attachment = attachment[0]   
 
@@ -89,54 +172,48 @@ def chat_rag_service_completion(provider, system, model, message, attachment, st
   # TODO: args must be like (provider1, system, model, message, filename_secure, stream)
   return query_rag(
      provider=provider1, 
-     query_text=message, 
+     message=message,
+     memory=memory, 
      model=model, 
-     system=system, 
      stream=stream, 
      chroma_path=chroma_path
-  ) # TODO: add providers & system ...
+  ) 
 
 
 def search_agent_service_completion(provider, model, message, stream=False):
-  system = """
-You are a search AI.  
-Your only task is to generate one or more concise, relevant search queries based on the user request.  
+#   system = """
+# You are a search AI.  
+# Your only task is to generate one or more concise, relevant search queries based on the user request.  
 
-Output format rules (STRICT):  
-- Always output each query on its own line in the form: search(<query>)  
-- Replace any line breaks in the query with spaces.  
-- Do NOT add words like "search for", "find", or "look up" inside the query.  
-- Do NOT repeat the word 'search' inside the query.  
-- Do NOT include quotes, punctuation outside the parentheses, or any text before/after the search(...) lines.  
-- Keep the query natural and optimized for search engines.  
-- max 2 search queries.  
+# Output format rules (STRICT):  
+# - Always output each query on its own line in the form: search(<query>)  
+# - Replace any line breaks in the query with spaces.  
+# - Do NOT add words like "search for", "find", or "look up" inside the query.  
+# - Do NOT repeat the word 'search' inside the query.  
+# - Do NOT include quotes, punctuation outside the parentheses, or any text before/after the search(...) lines.  
+# - Keep the query natural and optimized for search engines.  
+# - max 2 search queries.  
 
-Example:  
-User: find best coffee shops in Paris  
-AI:  
-search(best coffee shops in Paris)  
-search(top cafes Paris reviews)  
-"""
+# Example:  
+# User: find best coffee shops in Paris  
+# AI:  
+# search(best coffee shops in Paris)  
+# search(top cafes Paris reviews)  
+# """
   
+  memory = chat_memory()
+  
+  prompt = poml(
+    markup=_SEARCH_PROMPT,
+    context={
+      "memory": memory,
+      "message": message,
+    },
+    format="openai_chat"
+  )
 
-  memory = "\n".join(item["content"] for item in get_memory())
-
-  if memory:
-      memory_str = "\n".join(memory)
-      prompt = f"""      
-      {system}
-      ---
-      {memory_str}
-      ---
-      {message}
-      """
-  else:
-      prompt = f"""
-      {system}
-      ---
-      {message}
-      """
-
+  messages = prompt.get("messages")
+  
   if provider == "pollination":
     provider1 = PollinationsProvider()
   elif provider == "groq":
@@ -148,9 +225,8 @@ search(top cafes Paris reviews)
   
   res = chat_completion_temp(
      provider=provider1, 
-     system=system, 
      model=model, 
-     user_message=prompt, 
+     messages=messages, 
      stream=False
   )
 
@@ -181,11 +257,90 @@ search(top cafes Paris reviews)
   
   return query_rag(
      provider=provider1, 
-     query_text=message, 
+     message=message,
+     memory=memory, 
      model=model, 
      stream=stream, 
      chroma_path=chroma_path
   ) 
+
+
+def chat_generate(tools, provider, model, message, attachment, stream=True ):
+    def generate():
+      # This function handles the logic for different chat modes
+      if tools: 
+        if "search" in tools:
+          yield f"data: {json.dumps({'status': 'Starting search agent'})}\n\n"
+          result_stream = search_agent_service_completion(
+              provider=provider, 
+              model=model, 
+              message=message, 
+              stream=stream
+          )
+          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+          for chunk in result_stream:
+              # CORRECT: Wrap each chunk in the SSE format
+              yield f"data: {json.dumps(chunk)}\n\n"
+          return
+        elif "study" in tools : 
+          yield f"data: {json.dumps({'status': 'Starting study agent'})}\n\n"
+          result_stream = chat_service_study_completion(
+              provider=provider, 
+              model=model, 
+              message=message, 
+              stream=stream
+          )
+          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+          for chunk in result_stream:
+              # CORRECT: Wrap each chunk in the SSE format
+              yield f"data: {json.dumps(chunk)}\n\n"
+          return
+        elif "latex" in tools : 
+          yield f"data: {json.dumps({'status': 'Starting LaTeX agent'})}\n\n"
+          result_stream = chat_service_latex_completion(
+              provider=provider, 
+              model=model, 
+              message=message, 
+              stream=stream
+          )
+          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+          for chunk in result_stream:
+              # CORRECT: Wrap each chunk in the SSE format
+              yield f"data: {json.dumps(chunk)}\n\n"
+          return
+      # Handle other tools like "study" in a similar way if needed...
+
+      # Handle attachments (RAG)
+      if attachment:
+          yield f"data: {json.dumps({'status': 'Processing document'})}\n\n"
+          result_stream = chat_rag_service_completion(
+              provider=provider, 
+              model=model, 
+              message=message, 
+              attachment=attachment, 
+              stream=stream
+          )
+          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+          for chunk in result_stream:
+              # CORRECT: Wrap each chunk in the SSE format
+              yield f"data: {json.dumps(chunk)}\n\n"
+          return
+      
+      # Default chat completion if no tools or attachments
+      yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+      result_stream = chat_service_completion(
+          provider=provider, 
+          model=model,
+          message=message, 
+          stream=stream
+      )
+      for chunk in result_stream:
+          # CORRECT: Wrap each chunk in the SSE format
+          yield f"data: {json.dumps(chunk)}\n\n"
+
+    return generate()
+
+
 
 
 # from flask import Response, stream_with_context

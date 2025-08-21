@@ -8,16 +8,12 @@ class GroqProvider:
             api_key=os.environ.get("GROQ_API_KEY")
         )
 
-    def completion(self, system, model="llama-3.3-70b-versatile", messages=None, stream=False, **kwargs):
+    def completion(self, model="llama-3.3-70b-versatile", messages=None, stream=False, **kwargs):
         """
         Compatible with global_completion.py: requires 'system', 'messages', and 'model'.
         """
         if messages is None:
             messages = []
-
-        # Prepend the system message, which global_completion.py sends separately
-        if system:
-            messages = [{"role": "system", "content": system}] + messages
 
         # Ensure all messages have content as a string (not list or dict)
         for msg in messages:

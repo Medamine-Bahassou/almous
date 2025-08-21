@@ -6,9 +6,15 @@ from src.providers.groq import GroqProvider
 from dotenv import load_dotenv
 from src.providers.global_completion import chat_completion
 
+from poml import poml 
+
 load_dotenv()
 
 CHROMA_PATH = "db/chroma"
+
+_RAG_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/rag.poml"
+
+
 PROMPT_TEMPLATE = """
 Document(s):
 {context}
@@ -17,8 +23,8 @@ Document(s):
 User: {question}
 Assistant:"""
 
-def query_rag(provider, system="", model="llama-3.3-70b-versatile", query_text=None, stream=False, chroma_path="") :
-    """Run a query against the RAG pipeline using Chroma + Jina + Groq."""
+def query_rag(provider, model="llama-3.3-70b-versatile", message=None, memory="", stream=False, chroma_path="") :
+    """Run a query against the RAG pipeline using Chroma + Jina + llm provide."""
     
     # Load DB
     embedding_function = JinaEmbeddings()
@@ -28,14 +34,24 @@ def query_rag(provider, system="", model="llama-3.3-70b-versatile", query_text=N
     )
 
     # Search
-    results = db.similarity_search_with_relevance_scores(query_text, k=5)
+    results = db.similarity_search_with_relevance_scores(message, k=5)
     if not results or results[0][1] < 0.5:
         return "Unable to find matching results."
 
     # Prepare context
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _ in results])
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=context_text, question=query_text)
+    
+    # prompt = prompt_template.format(context=context_text, question=message)
+    messages = poml(
+        markup=_RAG_PROMPT,
+        format="openai_chat",
+        context={
+            "document": context_text,
+            "message": message,
+            "memory":memory,
+        }
+    )
 
     # LLM response
     # groq_provider = GroqProvider()
@@ -46,8 +62,10 @@ def query_rag(provider, system="", model="llama-3.3-70b-versatile", query_text=N
         return "No provider"
     # messages = [{"role": "user", "content": prompt}]
 
-    print(">>>>>>DEBUG PROMPT "+prompt +"\n ===============")
-    return chat_completion(provider=provider, system=system, user_message=prompt, model=model, stream=stream)
+    print(">>>>>>DEBUG PROMPT "+messages +"\n ===============")
+
+
+    return chat_completion(provider=provider, messages=messages, model=model, stream=stream)
     
 
 

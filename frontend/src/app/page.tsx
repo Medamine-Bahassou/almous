@@ -209,7 +209,6 @@ export default function ChatPage() {
       );
     } finally {
       setIsLoading(false);
-      setSelectedTools([]); // Reset tools after sending
     }
   };
 

@@ -30,7 +30,7 @@ interface ChatInputProps {
   selectedFiles: File[]
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
   removeFile: (index: number) => void
-  selectedTools: string[];      // <-- CHANGED
+  selectedTools: string[];      
   onToggleTool: (tool: string) => void; 
 
 }
@@ -43,7 +43,7 @@ export function ChatInput({
   selectedFiles,
   handleFileUpload,
   removeFile,
-  selectedTools, // <-- CHANGED
+  selectedTools,  
   onToggleTool
 
 }: ChatInputProps) {
