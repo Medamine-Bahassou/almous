@@ -46,4 +46,4 @@ env/
 .env
 
 # rag
-db/chroma/
+chroma/
