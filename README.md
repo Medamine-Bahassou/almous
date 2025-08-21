@@ -27,6 +27,13 @@ Built with Python and Flask, Almous is modular, easy to extend, and ready to pow
 -   **Modular & Extensible Architecture**: The codebase is organized into controllers, services, providers, and tools, making it easy to add new features, LLM providers, or tools.
 -   **Conversation Memory**: Remembers the last few turns of the conversation to maintain context.
 
+
+![](./assets/screenshots/chat.png)
+![](./assets/screenshots/chat-1.png)
+![](./assets/screenshots/latex-mode.png)
+![](./assets/screenshots/readme-gen.png)
+
+
 ## 🛠️ Technology Stack
 
 | Category                 | Technology                                                                                                  |
