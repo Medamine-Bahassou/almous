@@ -16,7 +16,7 @@ CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
 # Initialize the Groq client
 try:
-    groq_client = Groq(api_key="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")
+    groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 except Exception as e:
     print(f"Error initializing Groq client: {e}")
     groq_client = None
