@@ -31,6 +31,7 @@ Built with Python and Flask, Almous is modular, easy to extend, and ready to pow
 ![](./assets/screenshots/chat.png)
 ![](./assets/screenshots/chat-1.png)
 ![](./assets/screenshots/latex-mode.png)
+![](./assets/screenshots/latex-mode-1.png)
 ![](./assets/screenshots/readme-gen.png)
 
 
