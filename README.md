@@ -1,8 +1,9 @@
-# Almous - Your Extensible AI Chat & Agent Backend
+# Almous - Your Extensible AI Chat 
 
- <!--- Placeholder image, you can create a real one --->
+<div align="center" style="border-radius: 30px; overflow: hidden; "  >
+  <img src="./assets/image.png" alt="logo" /> 
+</div>
 
-<img src="./assets/image.png" alt="logo" style="border-radius: 20px; "> 
 
 Almous is a powerful and flexible AI backend designed to serve as the brain for advanced chat applications. It goes beyond simple Q&A by integrating multiple Large Language Model (LLM) providers, Retrieval-Augmented Generation (RAG) for document interaction, and an autonomous web search agent to provide answers based on real-time information from the internet.
 
