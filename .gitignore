@@ -1,0 +1,49 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+
+# Build output
+dist/
+build/
+
+# Compiled class files
+*.class
+
+# Logs
+*.log
+
+# Build directories
+target/
+out/
+
+# IDE configs
+.idea/
+*.iml
+
+# Environment variables
+.env
+
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+env/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# rag
+db/chroma/
