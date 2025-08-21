@@ -3,7 +3,7 @@ from openai import OpenAI
 
 class A4FProvider:
     def __init__(self):
-        self.api_key = os.environ.get("A4F_API_KEY", "ddc-a4f-bc5817b66d684c3fa712da0357f2a2d9")
+        self.api_key = os.environ.get("A4F_API_KEY")
         self.base_url = "https://api.a4f.co/v1"
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 

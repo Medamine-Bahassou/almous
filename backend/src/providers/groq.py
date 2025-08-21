@@ -1,4 +1,3 @@
-# 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
 import os
 import openai
 
