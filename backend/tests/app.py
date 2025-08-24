@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Initialize Groq client
-client = Groq(api_key="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")
+client = Groq(api_key="")
 
 # Chat endpoint
 @app.route("/api/chat", methods=["POST"])
