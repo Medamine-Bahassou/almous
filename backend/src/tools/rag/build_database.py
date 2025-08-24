@@ -44,7 +44,6 @@ def load_documents():
     return documents
 
 
-
 import string
 
 def clean_text(text: str) -> str:
@@ -70,6 +69,7 @@ def clean_text(text: str) -> str:
     text = text.strip()
 
     return text
+
 
 def load_documents_with_markitdown(folder_path: str) -> list[Document]:
     """Load and convert all supported files in the folder into Markdown documents."""
@@ -119,6 +119,7 @@ def split_text(documents: list[Document]):
     print(document.metadata)
     return chunks
 
+
 import uuid
 
 def save_to_chroma(chunks: list[Document]):
@@ -140,6 +141,7 @@ def save_to_chroma(chunks: list[Document]):
     print(f"Saved {len(chunks)} chunks to {PATH}.")
 
     return PATH
+
 
 if __name__ == "__main__":
     main()

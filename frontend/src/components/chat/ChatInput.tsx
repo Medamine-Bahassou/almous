@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "../ui/checkbox"
 import { useModels } from "@/hook/useModels"
+import { fetchModels } from "@/lib/models"
 
 interface ChatInputProps {
   input: string
@@ -30,9 +31,10 @@ interface ChatInputProps {
   selectedFiles: File[]
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
   removeFile: (index: number) => void
-  selectedTools: string[];      
-  onToggleTool: (tool: string) => void; 
-
+  selectedTools: string[];
+  onToggleTool: (tool: string) => void;
+  setModel: (modelId: string) => void
+  setProvider: (providerId: string) => void
 }
 
 export function ChatInput({
@@ -43,9 +45,10 @@ export function ChatInput({
   selectedFiles,
   handleFileUpload,
   removeFile,
-  selectedTools,  
-  onToggleTool
-
+  selectedTools,
+  onToggleTool,
+  setModel,
+  setProvider
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -65,13 +68,13 @@ export function ChatInput({
   }
 
 
-  const [selectedModel, setSelectedModel] = useState({ id: "gpt-4o", name: "GPT-4o" })
+  // const [selectedModel, setSelectedModel] = useState({ id: "gpt-4o", name: "GPT-4o" })
 
-  const models = [
-    { id: 'gpt-4o', name: 'GPT-4o' },
-    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-  ];
+  // const models = [
+  //   { id: 'gpt-4o', name: 'GPT-4o' },
+  //   { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
+  //   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+  // ];
 
   // const { models, loading: modelsLoading, error: modelsError } = useModels("pollination");
 
@@ -82,8 +85,49 @@ export function ChatInput({
     { id: 'better', name: 'Better mode' },
   ];
 
+  const [error, setError] = useState<string | null>(null);
+  const [models, setModels] = useState<[string, string][]>([]);
+  const [selectedModel, setSelectedModel] = useState('');
+  const [selectedModelName, setSelectedModelName] = useState('');
+
+  const [selectedProvider, setSelectedProvider] = useState("")
+
+
+  const providers = [
+    { id: "pollination", name: "Pollination" },
+    { id: "groq", name: "Groq" },
+    { id: "a4f", name: "A4F" },
+  ]
+
+  useEffect(()=> {
+    setSelectedProvider(providers[0].id)
+  },[])
+
+
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        const formatted = await fetchModels(selectedProvider);
+        setModels(formatted);
+        if (formatted.length) {
+          setSelectedModel(formatted[0][0]);
+          setSelectedModelName(formatted[0][1]);
+        }
+      } catch (err: any) {
+        setError(err.message);
+      }
+    }
+    loadModels();
+  }, [selectedProvider]);
+
+
+
+
+
+
+
   return (
-    <footer className=" bg-background/80 backdrop-blur-sm p-4 w-full">
+    <footer className=" bg-background/80 backdrop-blur-sm  w-full px-6 ">
       <div className="max-w-4xl mx-auto">
         {selectedFiles.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-2">
@@ -100,7 +144,7 @@ export function ChatInput({
         )}
 
         <label htmlFor="prompt">
-          <div className="relative flex flex-col items-center w-full p-2 space-x-2 bg-zinc-100 dark:bg-zinc-800 rounded-3xl">
+          <div className="relative flex flex-col items-center w-full p-2 space-x-2 border glow bg-zinc-100 dark:bg-zinc-800 rounded-3xl">
             <div className="w-full">
               <textarea
                 id="prompt"
@@ -109,8 +153,7 @@ export function ChatInput({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Ask Anything..."
-                className="flex-1 w-full pt-2 pb-4 px-4 bg-transparent border-none outline-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground resize-none overflow-auto max-h-[200px]"
-                disabled={isLoading}
+                className="flex-1 w-full py-2  px-4 bg-transparent border-none outline-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground resize-none overflow-auto max-h-[200px]"
                 rows={1}
               />
             </div>
@@ -129,9 +172,9 @@ export function ChatInput({
                   <DropdownMenuContent className="w-56" align="start">
                     <DropdownMenuGroup>
                       {tools.map((tool) => (
-                        <DropdownMenuItem 
-                          onSelect={(e) => e.preventDefault()} 
-                          key={tool.id} 
+                        <DropdownMenuItem
+                          onSelect={(e) => e.preventDefault()}
+                          key={tool.id}
                           onClick={() => onToggleTool(tool.id)}
                         >
                           <div className="flex justify-between items-center w-full">
@@ -148,7 +191,7 @@ export function ChatInput({
                             />
                           </div>
                         </DropdownMenuItem>
-                      ))} 
+                      ))}
 
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
@@ -160,7 +203,7 @@ export function ChatInput({
                   <Paperclip className="w-5 h-5" />
                 </Button>
 
-               
+
 
                 {/* latex tool */}
                 <Button
@@ -174,21 +217,30 @@ export function ChatInput({
               </div>
               <div>
                 <div className="flex items-center gap-2">
+
+                  {/* models list */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button className="border-none " variant="outline">
-                        {selectedModel.name}
+                      <Button className="border-none w-40 " variant="outline" >
+                        <div className="text-xs truncate">
+                          {selectedModelName}
+                        </div>
                         <ChevronDown />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="start">
+                    <DropdownMenuContent className="w-56 " align="start">
                       <DropdownMenuGroup>
                         {models.map((model) => (
                           <DropdownMenuItem
-                            key={model.id}
-                            onClick={() => setSelectedModel(model)}
+                            key={model[0]}
+                            onClick={() => {
+                              setModel(model[0]);
+                              setSelectedModelName(model[1]);
+                            }}
                           >
-                            {model.name}
+                            <div className="text-xs">
+                              {model[1]}
+                            </div>
                           </DropdownMenuItem>
                         ))}
 
@@ -197,6 +249,38 @@ export function ChatInput({
                   </DropdownMenu>
 
 
+                  {/* providers list */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="border-none w-32 " variant="outline" >
+                        <div className="text-xs truncate">
+                          {selectedProvider}
+                        </div>
+                        <ChevronDown />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-32 " align="start">
+                      <DropdownMenuGroup>
+                        {providers.map((provider) => (
+                          <DropdownMenuItem
+                            key={provider.id}
+                            onClick={() => {
+                              setSelectedProvider(provider.id);
+                              setProvider(provider.id);
+                            }}
+                          >
+                            <div className="text-xs">
+                              {provider.name}
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+
+                  {/* send button */}
                   <Button onClick={handleSend} disabled={(!input.trim() && selectedFiles.length === 0) || isLoading} size="icon" className="flex-shrink-0 w-10 h-10 rounded-full bg-black opacity-80 dark:bg-white hover:opacity-100 hover:bg-black dark:hover:opacity-100 disabled:opacity-50">
                     <ArrowUp className="w-5 h-5" />
                   </Button>

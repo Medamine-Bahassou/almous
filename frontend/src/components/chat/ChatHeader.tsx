@@ -15,7 +15,7 @@ export function ChatHeader({ title, onMenuClick }: ChatHeaderProps) {
       <Button onClick={onMenuClick} variant="ghost" size="sm" className="lg:hidden">
         <Menu className="h-4 w-4" />
       </Button>
-      <h1 className="text-lg font-medium flex-1 text-center">{title}</h1>
+      <h1 className="text-md font-medium flex-1 text-center">{title}</h1>
     </header>
   )
 }

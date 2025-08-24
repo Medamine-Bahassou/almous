@@ -116,6 +116,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -128,9 +129,9 @@
 .loader {
   width: 50px;
   scale: 0.5;
-  aspect-ratio: 1; 
-  --_c:no-repeat radial-gradient(farthest-side,#25b09b 92%,#0000);
-  background: 
+  aspect-ratio: 1;
+  --_c: no-repeat radial-gradient(farthest-side, #25b09b 92%, #0000);
+  background:
     var(--_c) top,
     var(--_c) left,
     var(--_c) right,
@@ -138,4 +139,59 @@
   background-size: 12px 12px;
   animation: l7 1s infinite;
 }
-@keyframes l7 {to{transform: rotate(.5turn)}}
+
+@keyframes l7 {
+  to {
+    transform: rotate(.5turn)
+  }
+}
+
+
+
+
+
+/* glow */
+.glow {
+  -webkit-box-shadow: 0px 0px 286px 0px rgba(255, 255, 255, 0.21);
+  -moz-box-shadow: 0px 0px 286px 0px rgba(255, 255, 255, 0.21);
+  box-shadow: 0px 0px 286px 0px rgba(255, 255, 255, 0.21);
+}
+
+/* GLOBAL scrollbar styling */
+.custom-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;                    /* "auto" | "thin" | "none" */
+  scrollbar-color: #9ca3af transparent;     /* thumb | track */
+}
+
+/* Chromium/WebKit */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px; /* for horizontal cases */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #9ca3af; /* gray-400 */
+  border-radius: 9999px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #6b7280; /* gray-500 */
+}
+
+/* Optional dark mode tweak */
+@media (prefers-color-scheme: dark) {
+  .custom-scrollbar {
+    scrollbar-color: #52525b transparent;   /* zinc-600 */
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #52525b;
+  }
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: #71717a;              /* zinc-500 */
+  }
+}

@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Response } from "@/components/ui/shadcn-io/ai/response";
+import { fetchModels } from "@/lib/models";
 
 export default function Readme() {
   const [repoLink, setRepoLink] = useState('');
@@ -24,25 +25,19 @@ export default function Readme() {
 
   // Fetch models from backend
   useEffect(() => {
-    async function fetchModels() {
+    async function loadModels() {
       try {
-        const res = await fetch('http://localhost:5000/api/models?provider=pollination');
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
-        if (!data.models || !Array.isArray(data.models)) throw new Error("Invalid model data");
-
-        const formatted: [string, string][] = data.models.map((m: { id: string, name: string }) => [m.id, m.name]);
+        const formatted = await fetchModels("pollination");
         setModels(formatted);
         if (formatted.length) {
           setSelectedModel(formatted[0][0]);
           setSelectedModelName(formatted[0][1]);
         }
       } catch (err: any) {
-        console.error(err);
-        setError("Failed to load models. Please try again later.");
+        setError(err.message);
       }
     }
-    fetchModels();
+    loadModels();
   }, []);
 
   // Generate README
@@ -51,10 +46,14 @@ export default function Readme() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/readme-gen', {
+      const res = await fetch('http://localhost:5000/api/readme-gen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repo_link: repoLink, model: selectedModel }),
+        body: JSON.stringify({ 
+          repo_url: repoLink, 
+          provider: "pollination",
+          model: selectedModel 
+        }),
       });
 
       if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
@@ -129,9 +128,13 @@ export default function Readme() {
           </div>
         ) : (
           <div className="p-2">
-
+            
             <Response>
               {result || `
+
+<think>
+hello think mode
+</think>
 
 <div align="center">
 <img src="https://cdn-icons-png.flaticon.com/512/1205/1205515.png" width="200"/>

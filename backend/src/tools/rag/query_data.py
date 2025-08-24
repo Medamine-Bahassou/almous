@@ -43,7 +43,7 @@ def query_rag(provider, model="llama-3.3-70b-versatile", message=None, memory=""
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     
     # prompt = prompt_template.format(context=context_text, question=message)
-    messages = poml(
+    prompt = poml(
         markup=_RAG_PROMPT,
         format="openai_chat",
         context={
@@ -52,7 +52,7 @@ def query_rag(provider, model="llama-3.3-70b-versatile", message=None, memory=""
             "memory":memory,
         }
     )
-
+    messages = prompt.get("messages")
     # LLM response
     # groq_provider = GroqProvider()
     # messages = [{"role": "user", "content": prompt}]
@@ -62,8 +62,8 @@ def query_rag(provider, model="llama-3.3-70b-versatile", message=None, memory=""
         return "No provider"
     # messages = [{"role": "user", "content": prompt}]
 
-    print(">>>>>>DEBUG PROMPT "+messages +"\n ===============")
-
+    # print(">>>>>>DEBUG PROMPT "+messages +"\n ===============")
+    print(messages)
 
     return chat_completion(provider=provider, messages=messages, model=model, stream=stream)
     

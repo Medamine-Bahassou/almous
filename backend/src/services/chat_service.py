@@ -264,82 +264,76 @@ def search_agent_service_completion(provider, model, message, stream=False):
      chroma_path=chroma_path
   ) 
 
-
-def chat_generate(tools, provider, model, message, attachment, stream=True ):
+def chat_generate(tools, provider, model, message, attachment, stream=True):
     def generate():
-      # This function handles the logic for different chat modes
-      if tools: 
-        if "search" in tools:
-          yield f"data: {json.dumps({'status': 'Starting search agent'})}\n\n"
-          result_stream = search_agent_service_completion(
-              provider=provider, 
-              model=model, 
-              message=message, 
-              stream=stream
-          )
-          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-          for chunk in result_stream:
-              # CORRECT: Wrap each chunk in the SSE format
-              yield f"data: {json.dumps(chunk)}\n\n"
-          return
-        elif "study" in tools : 
-          yield f"data: {json.dumps({'status': 'Starting study agent'})}\n\n"
-          result_stream = chat_service_study_completion(
-              provider=provider, 
-              model=model, 
-              message=message, 
-              stream=stream
-          )
-          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-          for chunk in result_stream:
-              # CORRECT: Wrap each chunk in the SSE format
-              yield f"data: {json.dumps(chunk)}\n\n"
-          return
-        elif "latex" in tools : 
-          yield f"data: {json.dumps({'status': 'Starting LaTeX agent'})}\n\n"
-          result_stream = chat_service_latex_completion(
-              provider=provider, 
-              model=model, 
-              message=message, 
-              stream=stream
-          )
-          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-          for chunk in result_stream:
-              # CORRECT: Wrap each chunk in the SSE format
-              yield f"data: {json.dumps(chunk)}\n\n"
-          return
-      # Handle other tools like "study" in a similar way if needed...
+        def passthrough(result_stream):
+            for chunk in result_stream:
+                # If service already yields SSE strings (starting with "data:")
+                if isinstance(chunk, str) and chunk.startswith("data:"):
+                    yield chunk  # forward directly
+                else:
+                    # Otherwise wrap it
+                    yield f"data: {json.dumps(chunk)}\n\n"
 
-      # Handle attachments (RAG)
-      if attachment:
-          yield f"data: {json.dumps({'status': 'Processing document'})}\n\n"
-          result_stream = chat_rag_service_completion(
-              provider=provider, 
-              model=model, 
-              message=message, 
-              attachment=attachment, 
-              stream=stream
-          )
-          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-          for chunk in result_stream:
-              # CORRECT: Wrap each chunk in the SSE format
-              yield f"data: {json.dumps(chunk)}\n\n"
-          return
-      
-      # Default chat completion if no tools or attachments
-      yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-      result_stream = chat_service_completion(
-          provider=provider, 
-          model=model,
-          message=message, 
-          stream=stream
-      )
-      for chunk in result_stream:
-          # CORRECT: Wrap each chunk in the SSE format
-          yield f"data: {json.dumps(chunk)}\n\n"
+        if tools: 
+            if "search" in tools:
+                yield f"data: {json.dumps({'status': 'Starting search agent'})}\n\n"
+                result_stream = search_agent_service_completion(
+                    provider=provider, 
+                    model=model, 
+                    message=message, 
+                    stream=stream
+                )
+                yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+                yield from passthrough(result_stream)
+                return
+            elif "study" in tools: 
+                yield f"data: {json.dumps({'status': 'Starting study agent'})}\n\n"
+                result_stream = chat_service_study_completion(
+                    provider=provider, 
+                    model=model, 
+                    message=message, 
+                    stream=stream
+                )
+                yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+                yield from passthrough(result_stream)
+                return
+            elif "latex" in tools: 
+                yield f"data: {json.dumps({'status': 'Starting LaTeX agent'})}\n\n"
+                result_stream = chat_service_latex_completion(
+                    provider=provider, 
+                    model=model, 
+                    message=message, 
+                    stream=stream
+                )
+                yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+                yield from passthrough(result_stream)
+                return
+
+        if attachment:
+            yield f"data: {json.dumps({'status': 'Processing document'})}\n\n"
+            result_stream = chat_rag_service_completion(
+                provider=provider, 
+                model=model, 
+                message=message, 
+                attachment=attachment, 
+                stream=stream
+            )
+            yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+            yield from passthrough(result_stream)
+            return
+
+        # Default chat
+        yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+        result_stream = chat_service_completion(
+            provider=provider, 
+            model=model,
+            message=message, 
+            stream=stream
+        )
+        yield from passthrough(result_stream)
 
     return generate()
-
 
 
 

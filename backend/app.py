@@ -16,9 +16,11 @@ app = Flask(__name__)
 CORS(app)
 
 from src.controllers.chat_controller import chat_bp
+from src.controllers.github_controller import github_bp
 
 # Register Blueprints
 app.register_blueprint(chat_bp)
+app.register_blueprint(github_bp)
 
 if __name__ == '__main__':
     app.run(debug=True)
