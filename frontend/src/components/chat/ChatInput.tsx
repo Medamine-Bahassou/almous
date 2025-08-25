@@ -101,6 +101,7 @@ export function ChatInput({
 
   useEffect(()=> {
     setSelectedProvider(providers[0].id)
+    setProvider(providers[0].id)
   },[])
 
 

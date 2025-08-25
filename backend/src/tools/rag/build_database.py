@@ -2,11 +2,18 @@ from langchain_community.document_loaders import DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 # from langchain_community.vectorstores import Chroma
+
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+from src.providers.embed.jina import JinaEmbeddings
+from langchain_cohere import CohereEmbeddings
+from langchain_nomic import NomicEmbeddings
+from langchain_together import TogetherEmbeddings
+
+
 from langchain_chroma import Chroma
 import os
 import re
 import shutil
-from src.providers.embed.jina import JinaEmbeddings
 from pathlib import Path
 
 from markitdown import MarkItDown
@@ -132,7 +139,12 @@ def save_to_chroma(chunks: list[Document]):
         
 
     # Create a new DB from the documents using Jina embeddings
-    embedding_function = JinaEmbeddings()
+    # embedding_function = FastEmbedEmbeddings()   
+    embedding_function = JinaEmbeddings(model="jina-clip-v2")   
+    # embedding_function = CohereEmbeddings(model="embed-v4.0")   
+    # embedding_function = NomicEmbeddings(model="nomic-embed-text-v1.5")
+    # embedding_function = TogetherEmbeddings(model="intfloat/multilingual-e5-large-instruct")
+           
     Chroma.from_documents(
         chunks,
         embedding_function,

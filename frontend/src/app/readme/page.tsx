@@ -12,6 +12,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Response } from "@/components/ui/shadcn-io/ai/response";
 import { fetchModels } from "@/lib/models";
+import { Card, CardHeader } from "@/components/ui/card";
+import { ChevronDown } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+
+// Type for our model structure
+type Model = {
+  id: string;
+  name: string;
+};
 
 export default function Readme() {
   const [repoLink, setRepoLink] = useState('');
@@ -19,40 +29,52 @@ export default function Readme() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [models, setModels] = useState<[string, string][]>([]);
-  const [selectedModel, setSelectedModel] = useState('');
-  const [selectedModelName, setSelectedModelName] = useState('');
+  const [models, setModels] = useState<Model[]>([]);
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
 
-  // Fetch models from backend
+  const [selectedLangauge, setSelectedLanguage] = useState<{id:string,name:string}>({ id: "english", name: "English" });
+  const languages = [
+    { id: "english", name: "English" },
+    { id: "french", name: "French" },
+    { id: "arabic", name: "Arabic" },
+  ]
+
+  // Fetch models on component mount
   useEffect(() => {
     async function loadModels() {
       try {
-        const formatted = await fetchModels("pollination");
-        setModels(formatted);
-        if (formatted.length) {
-          setSelectedModel(formatted[0][0]);
-          setSelectedModelName(formatted[0][1]);
+        const fetchedModels = await fetchModels("pollination");
+        const formattedModels = fetchedModels.map(([id, name]: [string, string]) => ({ id, name }));
+        setModels(formattedModels);
+        if (formattedModels.length > 0) {
+          setSelectedModel(formattedModels[0]);
         }
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch models.");
       }
     }
     loadModels();
   }, []);
 
-  // Generate README
+  // Generate README using the SSE parsing logic from ChatPage
   const handleGenerate = async () => {
+    if (!selectedModel) {
+      setError("Please select a model.");
+      return;
+    }
+
     setResult('');
     setError(null);
     setLoading(true);
+
     try {
       const res = await fetch('http://localhost:5000/api/readme-gen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          repo_url: repoLink, 
+        body: JSON.stringify({
+          repo_url: repoLink,
           provider: "pollination",
-          model: selectedModel 
+          model: selectedModel.id
         }),
       });
 
@@ -61,201 +83,167 @@ export default function Readme() {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = "";
+
+      // =================================================================
+      // CORE LOGIC CHANGE: Adopted from your ChatPage component
+      // This loop correctly parses the Server-Sent Events (SSE) stream.
+      // =================================================================
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        setResult(prev => prev + chunk);
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || ""; // Keep the last, possibly incomplete line
+
+        for (const line of lines) {
+          if (line.startsWith("data:")) {
+            const dataContent = line.substring(5).trim();
+            if (!dataContent) continue;
+
+            try {
+              const parsed = JSON.parse(dataContent);
+
+              // Extract the text content from the parsed JSON object
+              const chunkText = parsed.text;
+              if (typeof chunkText === 'string') {
+                setResult(prev => prev + chunkText);
+              }
+            } catch (e) {
+              console.warn("Could not parse SSE JSON chunk:", dataContent, e);
+            }
+          }
+        }
       }
-    } catch (err: any) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred.";
       console.error(err);
-      setError(err.message || "An unexpected error occurred.");
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+
+
   return (
-    <div className="flex flex-col items-center p-6 gap-6 w-full h-full">
-      {/* Header */}
-      <h1 className="text-3xl font-bold text-center">
-        <span className="text-red-500">README</span> Generator
-      </h1>
+    <div className="flex border divide-border w-full h-[100vh]  ">
 
-      {/* Model selector */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="w-52">
-            <span className="truncate">{selectedModelName || "Select a model"}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56">
-          {models.map(([id, name]) => (
-            <DropdownMenuItem key={id} onSelect={() => { setSelectedModel(id); setSelectedModelName(name); }}>
-              {name}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* Input & generate button */}
-      <div className="flex flex-col md:flex-row gap-4 w-full max-w-3xl items-center">
-        <Input
-          placeholder="https://github.com/user/repo"
-          value={repoLink}
-          onChange={(e) => setRepoLink(e.target.value)}
-          className="flex-1"
-        />
-        <Button onClick={handleGenerate} disabled={loading || !repoLink || !selectedModel}>
-          {loading ? "Generating..." : "Generate README"}
-        </Button>
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-100 text-red-700 p-3 rounded-md w-full max-w-3xl text-center">
-          {error}
+      {/* readme preview */}
+      <div className="flex flex-col items-center  w-7/12 h-full ">
+        <div className="w-full max-w-4xl h-full overflow-auto p-4 bg-white dark:bg-neutral-950">
+          {loading && !result ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="loader"></div>
+            </div>
+          ) : (
+            <div className="p-2">
+              <Response>
+                {result || "Enter a repository URL and click 'Generate' to see the result here."}
+              </Response>
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Result container */}
-      <div className="w-full max-w-4xl h-[60vh] border rounded-lg overflow-auto p-4 bg-white dark:bg-neutral-950">
-        {loading && result.length === 0 ? (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-4 w-2/3" />
-          </div>
-        ) : (
-          <div className="p-2">
-            
-            <Response>
-              {result || `
-
-<think>
-hello think mode
-</think>
-
-<div align="center">
-<img src="https://cdn-icons-png.flaticon.com/512/1205/1205515.png" width="200"/>
-</div>
-
-# Project Name
-
-A short description of what this project does and who it's for.
-
----
-
-## Table of Contents
-
-- [About](#about)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
-
----
-
-## About
-
-Explain the purpose of your project, the problems it solves, and the value it provides.
-
----
-
-## Features
-
-- Feature 1: Brief description
-- Feature 2: Brief description
-- Feature 3: Brief description
-
----
-
-## Installation
-
-Clone the repo and install dependencies:
-
-\`\`\`bash
-git clone https://github.com/yourusername/project-name.git
-cd project-name
-npm install
-\`\`\`
-
----
-
-## Usage
-
-Start the project locally:
-
-\`\`\`bash
-npm start
-\`\`\`
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## Configuration
-
-Provide any environment variables or configuration settings needed:
-
-\`\`\`env
-API_KEY=your_api_key_here
-NODE_ENV=development
-\`\`\`
-
----
-
-## Contributing
-
-Contributions are welcome! Follow these steps:
-
-1. Fork the repository
-2. Create a new branch: \`git checkout -b feature-branch\`
-3. Make your changes and commit: \`git commit -m "Add new feature"\`
-4. Push to your branch: \`git push origin feature-branch\`
-5. Open a Pull Request
-
-Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
-
----
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-## Contact
-
-Your Name – [your.email@example.com](mailto:your.email@example.com)  
-Project Link: [https://github.com/yourusername/project-name](https://github.com/yourusername/project-name)
-
----
-
-## Example Code
-
-\`\`\`javascript
-function greet(name) {
-  console.log(\`Hello, \${name}!\`);
-}
-
-greet("World");
-\`\`\`
-
----
-
-## Acknowledgements
-
-- List any resources, tutorials, or inspirations you want to credit.
-`}
-            </Response>
-          </div>
-
-        )}
       </div>
-    </div>
+
+
+      {/* parameters */}
+      <Card className=" flex flex-col justify-between rounded-none border-l p-6 w-5/12">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl pb-6">
+            README Generator
+          </h1>
+
+          {/* models */}
+          <Label htmlFor="models" >
+            Models:
+          </Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button id="models" variant="outline" className="  flex justify-between ">
+                <span className="truncate">{selectedModel?.name || "Select a model"}</span>
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 max-h-60" align="start" >
+              {models.map((model) => (
+                <DropdownMenuItem key={model.id} onSelect={() => setSelectedModel(model)}>
+                  {model.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* repo link */}
+          <Label htmlFor="models"  >
+            Repository Link:
+          </Label>
+          <div className="flex flex-col md:flex-row gap-2 w-full  items-center  ">
+            <Input
+              placeholder="https://github.com/user/repo"
+              value={repoLink}
+              onChange={(e) => setRepoLink(e.target.value)}
+              className="flex-1"
+            />
+
+          </div>
+
+          <Separator className="my-4" />
+
+
+          {/* languages */}
+          <Label htmlFor="models"  >
+            Language:
+          </Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button id="language" variant="outline" className="  flex justify-between ">
+                <span className="truncate">{selectedLangauge?.name || "Select a model"}</span>
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 max-h-60" align="start" >
+              {languages.map((language) => (
+                <DropdownMenuItem key={language.id} onClick={()=> setSelectedLanguage(language)} >
+                  {language.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+
+          {/* title optional */}
+          <Label htmlFor="title"  >
+            Project Title: (optional)
+          </Label>
+          <div className="flex flex-col md:flex-row gap-2 w-full  items-center  ">
+            <Input
+              placeholder="Title"
+              className="flex-1"
+            />
+
+          </div>
+
+        </div>
+
+
+        {/* generate button */}
+        <div className="flex justify-end">
+          <Button className="" onClick={handleGenerate} disabled={loading || !repoLink || !selectedModel}>
+            {loading ? "Generating..." : "Generate "}
+          </Button>
+        </div>
+        {
+          error && (
+            <div className="bg-red-100 text-red-700 p-3 rounded-md w-full max-w-3xl text-center">
+              {error}
+            </div>
+          )
+        }
+      </Card >
+
+    </div >
+
   );
 }

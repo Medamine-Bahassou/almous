@@ -50,3 +50,5 @@ class JinaEmbeddings:
         response.raise_for_status()
 
         return [item['embedding'] for item in response.json()['data']]
+
+
