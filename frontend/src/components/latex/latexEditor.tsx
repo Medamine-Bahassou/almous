@@ -11,16 +11,17 @@ export default function LatexEditor() {
   return (
     <Tabs defaultValue="input" className="w-full h-full">
       <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="input">Input</TabsTrigger>
         <TabsTrigger value="preview">Preview</TabsTrigger>
+        <TabsTrigger value="input" >Input</TabsTrigger>
       </TabsList>
 
       <TabsContent value="input" className="mt-4 h-full">
         <Textarea
           value={latex}
           onChange={(e) => setLatex(e.target.value)}
-          placeholder="Enter your LaTeX code here..."
-          className="h-[calc(100vh-150px)] font-mono text-sm"
+          placeholder="Your LaTeX code here..."
+          className=" font-mono text-sm h-full"
+          disabled
         />
       </TabsContent>
 

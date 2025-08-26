@@ -80,8 +80,8 @@ export default function LatexPreview({ latexContent }: LatexPreviewProps) {
   // 6. Simplified the render logic. If no content, show placeholder.
   if (!latexContent || !extractedLatex) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-900/50">
-        <div className="flex flex-col items-center justify-center text-slate-400 opacity-50">
+      <div className="flex h-full w-full flex-col items-center justify-center rounded-xl bg-muted dark:bg-muted">
+        <div className="flex flex-col items-center justify-center   opacity-50">
           <FileText className="h-10 w-10" />
           <p className="mt-2 text-sm">No LaTeX Preview Available</p>
         </div>

@@ -140,7 +140,7 @@ def chat_service_completion(provider, model, message, stream=False):
   )
 
 
-def chat_rag_service_completion(provider, model, message, attachment, stream=False):
+def chat_rag_service_completion(provider, model, message, attachment, stream=True):
 
   memory = chat_memory()
 
@@ -148,7 +148,7 @@ def chat_rag_service_completion(provider, model, message, attachment, stream=Fal
     attachment = attachment[0]   
 
   filename_secure = secure_filename(attachment)
-  filename = f"/home/med/Desktop/Git/AIONOS/backend_new/src/uploads/{filename_secure}"
+  filename = f"/home/med/Desktop/Git/almous/uploads/{filename_secure}"
 
 
   ## chrome db data store
@@ -176,7 +176,8 @@ def chat_rag_service_completion(provider, model, message, attachment, stream=Fal
      memory=memory, 
      model=model, 
      stream=stream, 
-     chroma_path=chroma_path
+     chroma_path=chroma_path,
+     k=30
   ) 
 
 

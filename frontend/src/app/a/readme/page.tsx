@@ -150,7 +150,7 @@ export default function Readme() {
 
       {/* parameters */}
       <Card className=" flex flex-col justify-between rounded-none border-l p-6 w-5/12">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <h1 className="text-3xl pb-6">
             README Generator
           </h1>
@@ -166,7 +166,7 @@ export default function Readme() {
                 <ChevronDown />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 max-h-60" align="start" >
+            <DropdownMenuContent className="w-full max-h-60" align="start" >
               {models.map((model) => (
                 <DropdownMenuItem key={model.id} onSelect={() => setSelectedModel(model)}>
                   {model.name}
@@ -203,7 +203,7 @@ export default function Readme() {
                 <ChevronDown />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 max-h-60" align="start" >
+            <DropdownMenuContent className="w-full max-h-60" align="start" >
               {languages.map((language) => (
                 <DropdownMenuItem key={language.id} onClick={()=> setSelectedLanguage(language)} >
                   {language.name}
@@ -219,7 +219,7 @@ export default function Readme() {
           </Label>
           <div className="flex flex-col md:flex-row gap-2 w-full  items-center  ">
             <Input
-              placeholder="Title"
+              placeholder="Title "
               className="flex-1"
             />
 

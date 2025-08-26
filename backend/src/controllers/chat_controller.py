@@ -60,7 +60,7 @@ def upload():
 
     if file:
         filename = secure_filename(file.filename)
-        upload_dir = "/home/med/Desktop/Git/AIONOS/backend_new/src/tools/rag/data"
+        upload_dir = os.environ.get("UPLOAD_PATH")
         
         # Ensure directory exists
         os.makedirs(upload_dir, exist_ok=True)

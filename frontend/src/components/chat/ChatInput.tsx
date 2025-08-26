@@ -1,26 +1,17 @@
-// components/chat/ChatInput.tsx
 "use client"
 
-import { useRef, useEffect, useState } from "react"
+import React, { useRef, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Paperclip, X, FileText, SlidersHorizontal, Microscope, Box, ArrowUp, ChevronDown, Globe, BookOpenText, Sparkle } from "lucide-react"
+import { Paperclip, X, FileText, SlidersHorizontal, ChevronDown, Globe, BookOpenText, Sparkle, ArrowUp } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "../ui/checkbox"
-import { useModels } from "@/hook/useModels"
 import { fetchModels } from "@/lib/models"
 
 interface ChatInputProps {
@@ -31,10 +22,15 @@ interface ChatInputProps {
   selectedFiles: File[]
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
   removeFile: (index: number) => void
-  selectedTools: string[];
-  onToggleTool: (tool: string) => void;
+  setTools: (tools: string[]) => void
   setModel: (modelId: string) => void
   setProvider: (providerId: string) => void
+}
+
+interface Tool {
+  id: string
+  name: string
+  icon: React.ElementType // 👈 use ElementType so you can render it
 }
 
 export function ChatInput({
@@ -45,13 +41,48 @@ export function ChatInput({
   selectedFiles,
   handleFileUpload,
   removeFile,
-  selectedTools,
-  onToggleTool,
+  setTools,
   setModel,
   setProvider
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // ---------------------------
+  // TOOLS
+  // ---------------------------
+  const tools: Tool[] = [
+    { id: "search", name: "Search", icon: Globe },
+    { id: "study", name: "Study mode", icon: BookOpenText },
+    { id: "better", name: "Better mode", icon: Sparkle },
+  ]
+
+  const [selectedTools, setSelectedTools] = useState<string[]>([])
+
+  const handleToggleTool = (toolId: string) => {
+    setSelectedTools(prev => {
+      const newTools = prev.includes(toolId)
+        ? prev.filter(id => id !== toolId)
+        : [...prev, toolId]
+
+      setTools(newTools) // sync to parent
+      return newTools
+    })
+  }
+
+  // ---------------------------
+  // PROVIDERS & MODELS
+  // ---------------------------
+  const providers = [
+    { id: "pollination", name: "Pollination" },
+    { id: "groq", name: "Groq" },
+    { id: "a4f", name: "A4F" },
+  ]
+
+  const [selectedProvider, setSelectedProvider] = useState("")
+  const [models, setModels] = useState<[string, string][]>([])
+  const [selectedModel, setSelectedModel] = useState("")
+  const [selectedModelName, setSelectedModelName] = useState("")
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -60,6 +91,30 @@ export function ChatInput({
     }
   }, [input])
 
+  useEffect(() => {
+    setSelectedProvider(providers[0].id)
+    setProvider(providers[0].id)
+  }, [])
+
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        const formatted = await fetchModels(selectedProvider)
+        setModels(formatted)
+        if (formatted.length) {
+          setSelectedModel(formatted[0][0])
+          setSelectedModelName(formatted[0][1])
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    if (selectedProvider) loadModels()
+  }, [selectedProvider])
+
+  // ---------------------------
+  // SEND
+  // ---------------------------
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -67,86 +122,54 @@ export function ChatInput({
     }
   }
 
-
-  // const [selectedModel, setSelectedModel] = useState({ id: "gpt-4o", name: "GPT-4o" })
-
-  // const models = [
-  //   { id: 'gpt-4o', name: 'GPT-4o' },
-  //   { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
-  //   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-  // ];
-
-  // const { models, loading: modelsLoading, error: modelsError } = useModels("pollination");
-
-
-  const tools = [
-    { id: 'search', name: 'Search' },
-    { id: 'study', name: 'Study mode' },
-    { id: 'better', name: 'Better mode' },
-  ];
-
-  const [error, setError] = useState<string | null>(null);
-  const [models, setModels] = useState<[string, string][]>([]);
-  const [selectedModel, setSelectedModel] = useState('');
-  const [selectedModelName, setSelectedModelName] = useState('');
-
-  const [selectedProvider, setSelectedProvider] = useState("")
-
-
-  const providers = [
-    { id: "pollination", name: "Pollination" },
-    { id: "groq", name: "Groq" },
-    { id: "a4f", name: "A4F" },
-  ]
-
-  useEffect(()=> {
-    setSelectedProvider(providers[0].id)
-    setProvider(providers[0].id)
-  },[])
-
-
-  useEffect(() => {
-    async function loadModels() {
-      try {
-        const formatted = await fetchModels(selectedProvider);
-        setModels(formatted);
-        if (formatted.length) {
-          setSelectedModel(formatted[0][0]);
-          setSelectedModelName(formatted[0][1]);
-        }
-      } catch (err: any) {
-        setError(err.message);
-      }
-    }
-    loadModels();
-  }, [selectedProvider]);
-
-
-
-
-
-
-
   return (
-    <footer className=" bg-background/80 backdrop-blur-sm  w-full px-6 ">
-      <div className="max-w-4xl mx-auto">
-        {selectedFiles.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {selectedFiles.map((file, index) => (
-              <Badge key={index} variant="secondary" className="flex items-center gap-2 px-3 py-1">
-                <FileText className="h-3 w-3" />
-                <span className="text-xs truncate max-w-32">{file.name}</span>
-                <Button onClick={() => removeFile(index)} variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground">
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            ))}
+    <footer className="bg-background/80 backdrop-blur-sm w-full px-6">
+      <div className="max-w-4xl mx-auto pt-2">
+
+        {/* Selected tools badges */}
+        {selectedTools.length > 0 && (
+          <div className="ml-4 flex gap-2 overflow-x-auto pb-2">
+            {selectedTools.map((toolId) => {
+              const tool = tools.find(t => t.id === toolId)!
+              const Icon = tool.icon
+              return (
+                <Badge key={tool.id} variant="secondary" className="flex items-center gap-2 px-3 py-1">
+                  <Icon className="h-3 w-3" />
+                  <span className="text-xs truncate max-w-32">{tool.name}</span>
+                  <Button
+                    onClick={() => handleToggleTool(tool.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="cursor-pointer h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )
+            })}
           </div>
         )}
 
+
+
         <label htmlFor="prompt">
           <div className="relative flex flex-col items-center w-full p-2 space-x-2 border glow bg-zinc-100 dark:bg-zinc-800 rounded-3xl">
+
             <div className="w-full">
+              {/* Selected files badges */}
+              {selectedFiles.length > 0 && (
+                <div className=" ml-2 flex gap-2 overflow-x-auto pb-2">
+                  {selectedFiles.map((file, index) => (
+                    <Badge key={index} variant="secondary" className="  flex items-center gap-2 px-3 py-1">
+                      <FileText className="h-3 w-3" />
+                      <span className="text-xs truncate max-w-32">{file.name}</span>
+                      <Button onClick={() => removeFile(index)} variant="ghost" size="sm" className="cursor-pointer h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground">
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
               <textarea
                 id="prompt"
                 ref={textareaRef}
@@ -159,139 +182,111 @@ export function ChatInput({
               />
             </div>
 
-            <div className="w-full flex justify-between">
+            <div className="w-full flex justify-between items-center mt-2">
               <div className="flex items-center gap-2">
-
-                {/* more tools  */}
-
+                {/* Tools */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button className="border-none " variant="ghost">
-                      <SlidersHorizontal className="w-5 h-5 " />
+                    <Button className="border-none rounded-full size-10 cursor-pointer" variant="outline">
+                      <SlidersHorizontal className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="start">
                     <DropdownMenuGroup>
-                      {tools.map((tool) => (
-                        <DropdownMenuItem
-                          onSelect={(e) => e.preventDefault()}
-                          key={tool.id}
-                          onClick={() => onToggleTool(tool.id)}
-                        >
-                          <div className="flex justify-between items-center w-full">
-                            <div className="flex items-center gap-2">
-                              {tool.id === "study" && <BookOpenText />}
-                              {tool.id === "better" && <Sparkle />}
-                              {tool.id === "search" && <Globe />}
-                              {tool.name}
+                      {tools.map((tool) => {
+                        const Icon = tool.icon
+                        return (
+                          <DropdownMenuItem key={tool.id}
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              handleToggleTool(tool.id)
+                            }}>
+                            <div className="flex justify-between items-center w-full">
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {tool.name}
+                              </div>
+                              <Checkbox checked={selectedTools.includes(tool.id)} />
                             </div>
-                            <Checkbox
-                              id={tool.id}
-                              checked={selectedTools.includes(tool.id)}
-                              onCheckedChange={() => onToggleTool(tool.id)}
-                            />
-                          </div>
-                        </DropdownMenuItem>
-                      ))}
-
+                          </DropdownMenuItem>
+                        )
+                      })}
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-
-                {/* file upload */}
-                <Button onClick={() => fileInputRef.current?.click()} variant="ghost" size="icon" className="flex-shrink-0 rounded-full">
+                {/* File upload */}
+                <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="icon" className="border-none rounded-full size-10 cursor-pointer">
                   <Paperclip className="w-5 h-5" />
                 </Button>
-
-
-
-                {/* latex tool */}
-                <Button
-                  variant={selectedTools.includes('latex') ? "default" : "secondary"}
-                  onClick={() => onToggleTool('latex')}
-                  className="flex-shrink-0 gap-2 px-3 text-sm rounded-full "
-                >
-                  <FileText className="w-4 h-4" />
-                  LaTeX
-                </Button>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
 
-                  {/* models list */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="border-none w-40 " variant="outline" >
-                        <div className="text-xs truncate">
-                          {selectedModelName}
-                        </div>
-                        <ChevronDown />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 " align="start">
-                      <DropdownMenuGroup>
-                        {models.map((model) => (
-                          <DropdownMenuItem
-                            key={model[0]}
-                            onClick={() => {
-                              setModel(model[0]);
-                              setSelectedModelName(model[1]);
-                            }}
-                          >
-                            <div className="text-xs">
-                              {model[1]}
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
+              <div className="flex items-center gap-2">
+                {/* Models */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="border-none w-40" variant="outline">
+                      <div className="text-xs truncate">{selectedModelName}</div>
+                      <ChevronDown />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="start">
+                    <DropdownMenuGroup>
+                      {models.map((model) => (
+                        <DropdownMenuItem
+                          key={model[0]}
+                          onClick={() => {
+                            setModel(model[0])
+                            setSelectedModelName(model[1])
+                          }}
+                        >
+                          <div className="text-xs">{model[1]}</div>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                {/* Providers */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="border-none w-32" variant="outline">
+                      <div className="text-xs truncate">{selectedProvider}</div>
+                      <ChevronDown />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-32" align="start">
+                    <DropdownMenuGroup>
+                      {providers.map((provider) => (
+                        <DropdownMenuItem
+                          key={provider.id}
+                          onClick={() => {
+                            setSelectedProvider(provider.id)
+                            setProvider(provider.id)
+                          }}
+                        >
+                          <div className="text-xs">{provider.name}</div>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-
-                  {/* providers list */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="border-none w-32 " variant="outline" >
-                        <div className="text-xs truncate">
-                          {selectedProvider}
-                        </div>
-                        <ChevronDown />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-32 " align="start">
-                      <DropdownMenuGroup>
-                        {providers.map((provider) => (
-                          <DropdownMenuItem
-                            key={provider.id}
-                            onClick={() => {
-                              setSelectedProvider(provider.id);
-                              setProvider(provider.id);
-                            }}
-                          >
-                            <div className="text-xs">
-                              {provider.name}
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-
-                  {/* send button */}
-                  <Button onClick={handleSend} disabled={(!input.trim() && selectedFiles.length === 0) || isLoading} size="icon" className="flex-shrink-0 w-10 h-10 rounded-full bg-black opacity-80 dark:bg-white hover:opacity-100 hover:bg-black dark:hover:opacity-100 disabled:opacity-50">
-                    <ArrowUp className="w-5 h-5" />
-                  </Button>
-                </div>
+                {/* Send */}
+                <Button
+                  onClick={handleSend}
+                  disabled={(!input.trim() && selectedFiles.length === 0) || isLoading}
+                  size="icon"
+                  className="w-10 h-10 rounded-full bg-black opacity-80 dark:bg-white hover:opacity-100 disabled:opacity-50"
+                >
+                  <ArrowUp className="w-5 h-5" />
+                </Button>
               </div>
             </div>
           </div>
         </label>
+
         <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} className="hidden" />
-        <p className="pt-2 text-xs text-center text-muted-foreground">AI can make mistakes. Consider checking important information.</p>
       </div>
     </footer>
   )

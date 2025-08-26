@@ -31,28 +31,20 @@ export function Sidebar({
     >
       <div className="flex flex-col h-full">
         {/* LOGO */}
-        <div className="border-b mt-1">
-          <div className="mx-4">
-            <img
-              src={"https://mohamedamine-bahassou.vercel.app/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo1.5a4b53ad.png&w=1080&q=75"}
-              alt="logo"
-              width={50}
-            />
-          </div>
-        </div>
+        
 
         {/* Buttons */}
-        <div className="p-4 border-b flex flex-col gap-2">
+        <div className="p-4   flex flex-col gap-2">
           <Button onClick={onNewChat} variant="outline" className="w-full justify-start gap-2">
             <Plus className="h-4 w-4" />
             New Chat
           </Button>
-          <Link href={"/readme"}>
+          {/* <Link href={"/readme"}>
             <Button variant="outline" className="w-full justify-start gap-2">
               <File className="h-4 w-4" />
               README Generator
             </Button>
-          </Link>
+          </Link> */}
         </div>
 
         <ScrollArea className="flex-1">
@@ -73,17 +65,6 @@ export function Sidebar({
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t">
-          <Button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            variant="outline"
-            size="sm"
-            className="w-full justify-start gap-2"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </Button>
-        </div>
       </div>
     </aside>
   )

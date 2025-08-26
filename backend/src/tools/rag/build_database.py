@@ -26,7 +26,7 @@ load_dotenv()
 
 
 CHROMA_PATH = "db/chroma"
-DATA_PATH = "/home/med/Desktop/Git/AIONOS/backend_new/src/tools/rag/data"
+DATA_PATH = os.environ.get("UPLOAD_PATH")
 
 def main():
     generate_data_store()
