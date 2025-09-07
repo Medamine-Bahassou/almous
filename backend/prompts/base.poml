@@ -1,0 +1,8 @@
+<poml>
+  <!-- SYSTEM -->
+  <include src="system.poml" />
+
+  <!-- INPUT -->
+  <include src="input.poml" />
+
+</poml>

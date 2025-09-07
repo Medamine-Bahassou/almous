@@ -115,14 +115,16 @@ export default function ChatPage() {
       prev.map((conv) =>
         conv.id === currentConversationId
           ? { ...conv, messages: [...conv.messages, userMessage], title: updatedTitle }
-          : conv, 
+          : conv,
       ),
     )
 
     setInput("")
     setSelectedFiles([])
     setIsLoading(true)
-
+    
+    console.log(selectedFiles.map((file) => file.name))
+    
     // This ID will be the base for all parts of this specific assistant response
     const assistantResponseId = (Date.now() + 1).toString()
 
@@ -264,7 +266,7 @@ export default function ChatPage() {
         <div className="flex flex-col min-w-0 min-h-0 border-r">
           <ChatHeader
             title={currentConversation?.title || "Chat"}
-            onMenuClick={() => setSidebarOpen(true)}
+            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           />
 
           {messages.length === 0 ? (
@@ -285,7 +287,9 @@ export default function ChatPage() {
             </div>
           ) : (
             <>
+
               <MessageList messages={messages} isLoading={isLoading} />
+
               <ChatInput
                 input={input}
                 setInput={setInput}
@@ -300,7 +304,7 @@ export default function ChatPage() {
               />
             </>
           )}
-        <p className="pt-2 text-xs text-center text-muted-foreground">AI can make mistakes. Consider checking important information.</p>
+          <p className="pt-2 text-xs text-center text-muted-foreground">AI can make mistakes. Consider checking important information.</p>
 
         </div>
 

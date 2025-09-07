@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { ThemeToggle } from "./theme-toggle";
 
 
 
@@ -76,14 +77,7 @@ export default function Sidebar() {
             <TooltipContent side="right">Profile</TooltipContent>
           </Tooltip>
           <div className="p-4 border-t">
-            <Button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-2 border-none cursor-pointer"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
+            <ThemeToggle/>
           </div>
 
         </div>

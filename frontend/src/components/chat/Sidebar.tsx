@@ -27,7 +27,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`${isOpen ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-50 w-64 bg-background border-r transition-transform lg:translate-x-0 lg:static`}
+      className={`${isOpen ? "block" : "hidden"} fixed inset-y-0 left-0 z-50 w-64 bg-background border-r transition-transform lg:translate-x-0 lg:static`}
     >
       <div className="flex flex-col h-full">
         {/* LOGO */}

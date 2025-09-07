@@ -94,10 +94,11 @@
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from src.providers.embed.jina import JinaEmbeddings
-from langchain_cohere import CohereEmbeddings
-from langchain_nomic import NomicEmbeddings
-from langchain_together import TogetherEmbeddings
-
+# from langchain_cohere import CohereEmbeddings
+# from langchain_nomic import NomicEmbeddings
+# from langchain_together import TogetherEmbeddings
+# from src.providers.embed.nvidia_llama import NvidiaEmbeddings
+from src.tools.rag.embedding_function import EmbeddingFunction
 
 
 from src.providers.global_completion import chat_completion
@@ -110,20 +111,47 @@ load_dotenv()
 # ENHANCEMENT: A much more robust RAG prompt template.
 # Using a clear, structured prompt is key to getting good RAG results.
 RAG_PROMPT_TEMPLATE = """
-**Task:** You are an intelligent assistant. Use the provided "Context Documents" to answer the "User's Question" accurately and concisely.
+You are answering a user’s question using the retrieved context.
 
 **Context Documents:**
----
+---------------------
 {context}
----
+---------------------
 
-**User:** {question}
-
----
+**Conversation History (for memory):**
 {memory}
----
-**Answer:** 
+
+**User Question:**
+{question}
+
+Instructions:
+- Base your answer strictly on the context above. 
+- If no relevant information is found, respond with: 
+  "I could not find sufficient information in the provided documents to fully answer your question."
+- Be clear, concise, and structured.
+
+**Answer:**
 """
+
+
+SYSTEM = """
+You are a Retrieval-Augmented Generation (RAG) assistant. 
+
+Your role:
+- Use only the "Context Documents" provided when answering.
+- If the context does not fully answer the question, say so clearly instead of guessing.
+- Always be accurate, concise, and neutral.
+- Cite sources explicitly when possible (e.g., "According to Source X...").
+- Do not invent information that is not present in the documents or widely known.
+- If multiple documents disagree, summarize the perspectives rather than choosing one.
+
+Output format:
+- A clear, well-structured answer (1–3 short paragraphs or bullet points).
+- If useful, include a **"Key Takeaways"** section.
+"""
+
+
+_RAG_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/rag.poml"
 
 
 def query_rag(provider, model, message, memory="", stream=False, chroma_path="",k=10):
@@ -136,10 +164,11 @@ def query_rag(provider, model, message, memory="", stream=False, chroma_path="",
 
     # 1. Load DB
     # embedding_function = FastEmbedEmbeddings()
-    embedding_function = JinaEmbeddings(model="jina-clip-v2")
+    # embedding_function = JinaEmbeddings(model="jina-clip-v2")
     # embedding_function = CohereEmbeddings(model="embed-v4.0")
     # embedding_function = NomicEmbeddings(model="nomic-embed-text-v1.5")
     # embedding_function = TogetherEmbeddings(model="intfloat/multilingual-e5-large-instruct")
+    embedding_function = EmbeddingFunction().get()
 
 
 
@@ -167,18 +196,32 @@ def query_rag(provider, model, message, memory="", stream=False, chroma_path="",
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _ in results])
 
     # 3. Construct the prompt using our high-quality template
-    formatted_prompt = RAG_PROMPT_TEMPLATE.format(
-        context=context_text,
-        question=message,
-        memory=memory
+    # formatted_prompt = RAG_PROMPT_TEMPLATE.format(
+    #     context=context_text,
+    #     question=message,
+    #     memory=memory
+    # )
+
+    # # The system prompt tells the LLM its core identity, while the user message contains the task.
+    # messages = [
+    #     {"role": "system", "content": SYSTEM},
+    #     {"role": "user", "content": formatted_prompt}
+    # ]
+
+
+    print("===== RAG =====")
+    prompt = poml(
+        markup=_RAG_PROMPT,
+        format="openai_chat",
+        context={
+            "document":context_text,    
+            "message": message,
+            "memory": memory 
+        }
     )
-    
-    # The system prompt tells the LLM its core identity, while the user message contains the task.
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant that answers questions based on provided documents."},
-        {"role": "user", "content": formatted_prompt}
-    ]
-    
+
+    messages = prompt.get("messages")
+
     print("--- RAG PROMPT ---")
     print(messages[1]['content'])
     print("------------------")

@@ -1,8 +1,0 @@
-<poml>
-  <role>
-    <p>You are an AI Assistant.</p>
-  </role>
-
-  <include src="input.poml" />
-
-</poml>

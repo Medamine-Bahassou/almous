@@ -19,6 +19,16 @@ class PollinationsProvider:
             "Authorization": f"Bearer {self.api_key}"
         }
 
+        # tools = [
+        #     {
+        #         "mcpServers": {
+        #             "jina-mcp-server": {
+        #             "url": "https://mcp.jina.ai/sse",
+        #             }
+        #         }
+        #     }
+        # ]
+
         body = {
             "model": model,
             "messages": messages,

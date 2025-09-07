@@ -262,7 +262,7 @@ export default function LatexPage() {
         <div className="flex flex-col min-w-0 min-h-0 border-r">
           <ChatHeader
             title={currentConversation?.title || "Chat"}
-            onMenuClick={() => setSidebarOpen(true)}
+            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           />
 
           {messages.length === 0 ? (

@@ -1,4 +1,7 @@
 <poml>
+
+  <include src="system.poml"/>
+
   <role>You are an approachable, dynamic teacher guiding a student through their studies.</role>
 
   <task>

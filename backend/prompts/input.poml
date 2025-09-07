@@ -1,7 +1,15 @@
 <poml>
-  <cp caption="Memory">
-    <p>{{memory}}</p>
+
+  <let name="memo" value="{{memory}}"></let>
+
+  
+  <!-- MEMORY (CONTEXT) -->
+  <cp caption="Context" if="memo">
+    <p name="memory">{{memo}}</p>
   </cp>
 
-  <input>{{message}}</input>
+  <!-- INPUT -->
+  <input >{{message}}</input>
+
+
 </poml>

@@ -12,6 +12,8 @@ from src.providers.pollination import PollinationsProvider
 from src.providers.groq import GroqProvider
 from src.providers.a4f import A4FProvider
 
+from src.tools.document.extract_text import load_documents_with_markitdown
+
 
 ##
 ## generate_data_store
@@ -30,9 +32,9 @@ from src.tools.search.search_agent import (
 )
 
 
-
+_SYSTEM_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/system.poml"
 _SEARCH_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/search.poml"
-_BASE_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/prompt-input.poml"
+_BASE_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/base.poml"
 _STUDY_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/study-mode.poml"
 _LATEX_PROMPT= "/home/med/Desktop/Git/almous/backend/prompts/latex-mode.poml"
 
@@ -43,6 +45,7 @@ def chat_memory():
 
 
 def use_chat(messages, provider, model, stream=False):
+
   print(messages)
 
   if provider == "pollination":
@@ -53,7 +56,7 @@ def use_chat(messages, provider, model, stream=False):
     provider1 = A4FProvider()
   else:
     return "No provider"
-    
+  
 
   return chat_completion(
      provider=provider1, 
@@ -143,42 +146,63 @@ def chat_service_completion(provider, model, message, stream=False):
 def chat_rag_service_completion(provider, model, message, attachment, stream=True):
 
   memory = chat_memory()
-
   if isinstance(attachment, list):
     attachment = attachment[0]   
 
-  filename_secure = secure_filename(attachment)
-  filename = f"/home/med/Desktop/Git/almous/uploads/{filename_secure}"
+  upload_folder_path = f"/home/med/Desktop/Git/almous/uploads/"
+
+  doc_content = load_documents_with_markitdown(upload_folder_path)
+
+  messages = [
+     {"role":"user", "content": memory},
+     {"role":"user", "content": doc_content},
+     {"role":"user", "content": message},
+  ]
 
 
-  ## chrome db data store
-  print("processing document (generating data store) ...")
+  tokens = count_tokens("gpt-4", messages=messages)
 
-  chroma_path= generate_data_store()
+  if tokens < 100000 :
 
-  print("finish processing document !")
+    return use_chat(
+      messages=messages,
+      provider=provider,
+      model=model,
+      stream=stream
+    )
 
-  ## rag query (groq)  
+  else : 
 
-  if provider == "pollination":
-    provider1 = PollinationsProvider()
-  elif provider == "groq":
-    provider1= GroqProvider() 
-  elif provider == "a4f":
-    provider1 = A4FProvider()
-  else:
-    return 
-  
-  # TODO: args must be like (provider1, system, model, message, filename_secure, stream)
-  return query_rag(
-     provider=provider1, 
-     message=message,
-     memory=memory, 
-     model=model, 
-     stream=stream, 
-     chroma_path=chroma_path,
-     k=30
-  ) 
+
+
+    ## chrome db data store
+    print("processing document (generating data store) ...")
+
+    chroma_path= generate_data_store()
+
+    print("finish processing document !")
+
+    ## rag query (groq)  
+
+    if provider == "pollination":
+      provider1 = PollinationsProvider()
+    elif provider == "groq":
+      provider1= GroqProvider() 
+    elif provider == "a4f":
+      provider1 = A4FProvider()
+    else:
+      return 
+    
+    # TODO: args must be like (provider1, system, model, message, filename_secure, stream)
+    return query_rag(
+      provider=provider1, 
+      message=message,
+      memory=memory, 
+      model=model, 
+      stream=stream, 
+      chroma_path=chroma_path,
+      k=30
+    ) 
 
 
 def search_agent_service_completion(provider, model, message, stream=False):
@@ -265,7 +289,10 @@ def search_agent_service_completion(provider, model, message, stream=False):
      chroma_path=chroma_path
   ) 
 
+
 def chat_generate(tools, provider, model, message, attachment, stream=True):
+    
+    
     def generate():
         def passthrough(result_stream):
             for chunk in result_stream:
@@ -276,7 +303,23 @@ def chat_generate(tools, provider, model, message, attachment, stream=True):
                     # Otherwise wrap it
                     yield f"data: {json.dumps(chunk)}\n\n"
 
-        if tools: 
+        # Attachment
+        if attachment:
+
+            yield f"data: {json.dumps({'status': 'Processing document'})}\n\n"
+            result_stream = chat_rag_service_completion(
+                provider=provider, 
+                model=model, 
+                message=message, 
+                attachment=attachment, 
+                stream=stream
+            )
+            yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+            yield from passthrough(result_stream)
+            return
+        
+        # Tools
+        elif tools: 
             if "search" in tools:
                 yield f"data: {json.dumps({'status': 'Starting search agent'})}\n\n"
                 result_stream = search_agent_service_completion(
@@ -311,30 +354,48 @@ def chat_generate(tools, provider, model, message, attachment, stream=True):
                 yield from passthrough(result_stream)
                 return
 
-        if attachment:
-            yield f"data: {json.dumps({'status': 'Processing document'})}\n\n"
-            result_stream = chat_rag_service_completion(
-                provider=provider, 
-                model=model, 
-                message=message, 
-                attachment=attachment, 
-                stream=stream
-            )
-            yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-            yield from passthrough(result_stream)
-            return
-
-        # Default chat
-        yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
-        result_stream = chat_service_completion(
-            provider=provider, 
-            model=model,
-            message=message, 
-            stream=stream
-        )
-        yield from passthrough(result_stream)
+        
+        else :
+          # Default chat
+          yield f"data: {json.dumps({'status': 'Generating AI response'})}\n\n"
+          result_stream = chat_service_completion(
+              provider=provider, 
+              model=model,
+              message=message, 
+              stream=stream
+          )
+          yield from passthrough(result_stream)
 
     return generate()
+
+
+import tiktoken
+
+def count_tokens(model: str, messages: list):
+    """
+    messages: list of {role, content}
+    model: e.g. "gpt-4", "gpt-3.5-turbo", "llama-3-8b"
+    """
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except KeyError:
+        # fallback: use cl100k_base (works for most chat models)
+        encoding = tiktoken.get_encoding("cl100k_base")
+    
+    total_tokens = 0
+    for message in messages:
+        # role + content + extra overhead per message
+        total_tokens += 4  
+        for key, value in message.items():
+            total_tokens += len(encoding.encode(value))
+    total_tokens += 2  # priming tokens
+    return total_tokens
+
+
+
+
+
+
 
 
 

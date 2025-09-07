@@ -11,6 +11,7 @@ import { CodeBlock, CodeBlockCopyButton } from './code-block';
 import 'katex/dist/katex.min.css';
 import hardenReactMarkdown from 'harden-react-markdown';
 import rehypeRaw from "rehype-raw";
+// import "github-markdown-css/github-markdown.css";
 
 
 /**
@@ -378,7 +379,7 @@ export const Response = memo(
           allowedLinkPrefixes={allowedLinkPrefixes ?? ['*']}
           components={components}
           defaultOrigin={defaultOrigin}
-          rehypePlugins={[rehypeKatex, rehypeRaw]}
+          rehypePlugins={[rehypeKatex]}
           remarkPlugins={[remarkGfm, remarkMath]}
           {...options}
         >

@@ -28,11 +28,12 @@ Built with Python and Flask, Almous is modular, easy to extend, and ready to pow
 -   **Conversation Memory**: Remembers the last few turns of the conversation to maintain context.
 
 
-![](./assets/screenshots/chat.png)
+![](./assets/screenshots/landing.png)
 ![](./assets/screenshots/chat-1.png)
-![](./assets/screenshots/latex-mode.png)
-![](./assets/screenshots/latex-mode-1.png)
-![](./assets/screenshots/readme-gen.png)
+![](./assets/screenshots/chat-2.png)
+![](./assets/screenshots/github-1.png)
+![](./assets/screenshots/github-2.png)
+![](./assets/screenshots/latex-1.png)
 
 
 ## 🛠️ Technology Stack

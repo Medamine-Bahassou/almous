@@ -19,9 +19,9 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
   }, [messages])
 
   return (
-    <div className="flex-1 overflow-auto  overscroll-contain custom-scrollbar">
+    <div className="flex-1 overflow-auto  overscroll-contain custom-scrollbar ">
       <div className="h-full">
-        <div className="max-w-3xl mx-auto px-4 py-6">
+        <div className="max-w-3xl mx-auto px-4 pt-6 pb-28">
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
